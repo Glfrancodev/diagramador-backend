@@ -1,24 +1,40 @@
 const Pestana = require('../models/pestana.model');
 const Proyecto = require('../models/proyecto.model');
+const Invitacion = require('../models/invitacion.model');
+
+
+async function tienePermisoProyecto(idUsuario, idProyecto) {
+  const proyecto = await Proyecto.findByPk(idProyecto);
+  if (!proyecto) throw new Error('Proyecto no encontrado');
+
+  if (proyecto.idUsuario === idUsuario) {
+    return true; // Es el dueño
+  }
+
+  const invitacion = await Invitacion.findOne({
+    where: {
+      idProyecto,
+      idUsuario,
+      estado: 'aceptada'
+    }
+  });
+
+  return !!invitacion; // True si tiene invitación aceptada
+}
+
 
 class PestanaService {
+  
   async crear(data, idUsuario) {
-    const proyecto = await Proyecto.findByPk(data.idProyecto);
-    if (!proyecto) throw new Error('Proyecto no encontrado');
-    if (proyecto.idUsuario !== idUsuario) throw new Error('No tienes permiso para agregar pestañas a este proyecto');
+    const permiso = await tienePermisoProyecto(idUsuario, data.idProyecto);
+    if (!permiso) throw new Error('No tienes permiso para agregar pestañas a este proyecto');    
 
     return await Pestana.create(data);
   }
-
-  async listarPorProyecto(idProyecto, idUsuario) {
-    const proyecto = await Proyecto.findByPk(idProyecto);
-    if (!proyecto) {
-      throw new Error('Proyecto no encontrado');
-    }
   
-    if (proyecto.idUsuario !== idUsuario) {
-      throw new Error('No tienes permiso para ver las pestañas de este proyecto');
-    }
+  async listarPorProyecto(idProyecto, idUsuario) {
+    const permiso = await tienePermisoProyecto(idUsuario, idProyecto);
+    if (!permiso) throw new Error('No tienes permiso para ver las pestañas de este proyecto');    
   
     return await Pestana.findAll({ where: { idProyecto } });
   }
@@ -34,10 +50,9 @@ class PestanaService {
     const pestana = await Pestana.findByPk(idPestana);
     if (!pestana) throw new Error('Pestaña no encontrada');
 
-    const proyecto = await Proyecto.findByPk(pestana.idProyecto);
-    if (!proyecto || proyecto.idUsuario !== idUsuario) {
-      throw new Error('No tienes permiso para actualizar esta pestaña');
-    }
+    const permiso = await tienePermisoProyecto(idUsuario, pestana.idProyecto);
+    if (!permiso) throw new Error('No tienes permiso para actualizar esta pestaña');
+    
 
     await pestana.update(data);
     return pestana;
@@ -47,14 +62,13 @@ class PestanaService {
     const pestana = await Pestana.findByPk(idPestana);
     if (!pestana) throw new Error('Pestaña no encontrada');
 
-    const proyecto = await Proyecto.findByPk(pestana.idProyecto);
-    if (!proyecto || proyecto.idUsuario !== idUsuario) {
-      throw new Error('No tienes permiso para eliminar esta pestaña');
-    }
+    const permiso = await tienePermisoProyecto(idUsuario, pestana.idProyecto);
+    if (!permiso) throw new Error('No tienes permiso para eliminar esta pestaña');    
 
     await pestana.destroy();
     return { mensaje: 'Pestaña eliminada correctamente' };
   }
+
 }
 
 module.exports = new PestanaService();
