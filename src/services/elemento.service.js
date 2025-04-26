@@ -49,11 +49,21 @@ class ElementoService {
     return await Elemento.findAll({ where: { idPestana } });
   }
 
-  async obtenerPorId(idElemento) {
+  async obtenerPorId(idElemento, idUsuario) {
     const elemento = await Elemento.findByPk(idElemento);
     if (!elemento) throw new Error('Elemento no encontrado');
+  
+    const pestana = await Pestana.findByPk(elemento.idPestana);
+    if (!pestana) throw new Error('Pestaña no encontrada');
+  
+    const permiso = await tienePermisoProyecto(idUsuario, pestana.idProyecto);
+    if (!permiso) {
+      throw new Error('No tienes permiso para ver este elemento');
+    }
+  
     return elemento;
   }
+  
 
   async actualizar(idElemento, idUsuario, data) {
     const elemento = await Elemento.findByPk(idElemento);
