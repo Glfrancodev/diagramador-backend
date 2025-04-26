@@ -62,8 +62,7 @@ class ElementoService {
     }
   
     return elemento;
-  }
-  
+  }  
 
   async actualizar(idElemento, idUsuario, data) {
     const elemento = await Elemento.findByPk(idElemento);

@@ -21,12 +21,13 @@ class ElementoController {
 
   async obtener(req, res) {
     try {
-      const elemento = await elementoService.obtenerPorId(req.params.id);
+      const elemento = await elementoService.obtenerPorId(req.params.id, req.usuario.idUsuario);
       res.json(elemento);
     } catch (err) {
-      res.status(404).json({ error: err.message });
+      res.status(403).json({ error: err.message });
     }
   }
+  
 
   async actualizar(req, res) {
     try {
