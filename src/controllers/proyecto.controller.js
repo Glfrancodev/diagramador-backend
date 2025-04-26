@@ -51,7 +51,26 @@ class ProyectoController {
       res.status(403).json({ error: err.message });
     }
   }
+
+  async listarPermitidos(req, res) {
+    try {
+      const proyectos = await proyectoService.listarProyectosPermitidos(req.usuario.idUsuario);
+      res.json(proyectos);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
   
+  async listarInvitados(req, res) {
+    try {
+      const proyectos = await proyectoService.listarProyectosInvitado(req.usuario.idUsuario);
+      res.json(proyectos);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+    
+
 }
 
 module.exports = new ProyectoController();

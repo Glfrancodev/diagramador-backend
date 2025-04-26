@@ -1,4 +1,5 @@
 const Proyecto = require('../models/proyecto.model');
+const Invitacion = require('../models/invitacion.model');
 
 class ProyectoService {
   async crear(data) {
@@ -43,7 +44,57 @@ class ProyectoService {
     await proyecto.destroy();
     return { mensaje: 'Proyecto eliminado correctamente' };
   }
+
+  async listarProyectosPermitidos(idUsuario) {
+    // Proyectos propios
+    const proyectosPropios = await Proyecto.findAll({
+      where: { idUsuario }
+    });
   
+    // Proyectos donde estoy invitado y acepté
+    const invitacionesAceptadas = await Invitacion.findAll({
+      where: {
+        idUsuario,
+        estado: 'aceptada'
+      }
+    });
+  
+    const proyectosInvitadoIds = invitacionesAceptadas.map(inv => inv.idProyecto);
+  
+    const proyectosInvitados = await Proyecto.findAll({
+      where: {
+        idProyecto: proyectosInvitadoIds
+      }
+    });
+  
+    // Unimos ambas listas
+    return [...proyectosPropios, ...proyectosInvitados];
+  }
+  
+  async listarProyectosInvitado(idUsuario) {
+    // Buscar todas las invitaciones aceptadas
+    const invitacionesAceptadas = await Invitacion.findAll({
+      where: {
+        idUsuario,
+        estado: 'aceptada'
+      }
+    });
+  
+    const proyectosIds = invitacionesAceptadas.map(inv => inv.idProyecto);
+  
+    if (proyectosIds.length === 0) {
+      return [];
+    }
+  
+    // Buscar los proyectos relacionados
+    return await Proyecto.findAll({
+      where: {
+        idProyecto: proyectosIds
+      }
+    });
+  }
+  
+
 }
 
 module.exports = new ProyectoService();
