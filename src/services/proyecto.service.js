@@ -24,13 +24,30 @@ class ProyectoService {
     const proyecto = await Proyecto.findByPk(idProyecto);
     if (!proyecto) throw new Error('Proyecto no encontrado');
   
-    if (proyecto.idUsuario !== idUsuario) {
+    // Si el usuario es el dueño, puede actualizar
+    if (proyecto.idUsuario === idUsuario) {
+      await proyecto.update(data);
+      return proyecto;
+    }
+  
+    // Si no es el dueño, verificamos si tiene invitación aceptada
+    const invitacion = await Invitacion.findOne({
+      where: {
+        idProyecto,
+        idUsuario,
+        estado: 'aceptada'
+      }
+    });
+  
+    if (!invitacion) {
       throw new Error('No tienes permiso para actualizar este proyecto');
     }
   
+    // Si tiene invitación aceptada, puede actualizar
     await proyecto.update(data);
     return proyecto;
   }
+  
   
 
   async eliminar(idProyecto, idUsuario) {

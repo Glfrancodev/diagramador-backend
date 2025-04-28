@@ -16,6 +16,10 @@ const Proyecto = sequelize.define('Proyecto', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  contenido: {
+    type: DataTypes.JSONB, // 👈 Importante para PostgreSQL
+    allowNull: true
+  },
   fechaCreacion: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW

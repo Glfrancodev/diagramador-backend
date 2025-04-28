@@ -9,6 +9,7 @@ router.get('/', verificarToken, proyectoController.listar);
 router.get('/permisos', verificarToken, proyectoController.listarPermitidos);
 router.get('/invitados', verificarToken, proyectoController.listarInvitados);
 
+router.get('/exportar/:id', verificarToken, proyectoController.exportar);
 router.get('/mis-proyectos', verificarToken, proyectoController.listarPorUsuario);
 router.get('/:id', verificarToken, proyectoController.obtener);
 router.put('/:id', verificarToken, proyectoController.actualizar);

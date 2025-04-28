@@ -46,6 +46,17 @@ class InvitacionController {
       res.status(403).json({ error: err.message });
     }
   }
+
+  async listarPendientes(req, res) {
+    try {
+      const invitaciones = await invitacionService.listarPendientesPorUsuario(req.usuario.idUsuario);
+      res.json(invitaciones);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+  
+
 }
 
 module.exports = new InvitacionController();

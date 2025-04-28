@@ -5,6 +5,17 @@ const { Server } = require('socket.io');
 const { sequelize } = require('./src/models'); // ⬅️ Importamos conexión a DB
 
 const server = http.createServer(app);
+process.on('uncaughtException', (err) => {
+  console.error('🔥 uncaughtException detectado:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🔥 unhandledRejection detectado:', reason);
+});
+
+// ⬇️ AUMENTAMOS EL TIMEOUT A 5 MINUTOS
+server.setTimeout(5 * 60 * 1000); // 5 minutos
+
 const io = new Server(server, {
   cors: {
     origin: '*',

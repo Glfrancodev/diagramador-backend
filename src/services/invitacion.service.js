@@ -80,6 +80,17 @@ class InvitacionService {
     await invitacion.destroy();
     return { mensaje: 'Invitación eliminada correctamente' };
   }
+
+  async listarPendientesPorUsuario(idUsuario) {
+    return await Invitacion.findAll({
+      where: {
+        idUsuario,
+        estado: 'pendiente'
+      }
+    });
+  }
+  
+
 }
 
 module.exports = new InvitacionService();
