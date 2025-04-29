@@ -1,8 +1,8 @@
 require("dotenv").config();
-const app            = require("./src/app");
-const http           = require("http");
-const { Server }     = require("socket.io");
-const { sequelize }  = require("./src/models");
+const app           = require("./src/app");
+const http          = require("http");
+const { Server }    = require("socket.io");
+const { sequelize } = require("./src/models");
 
 /* ---------- HTTP ---------- */
 const server = http.createServer(app);
@@ -15,39 +15,47 @@ const io = new Server(server, {
 io.on("connection", socket => {
   console.log("🟢 Conectado:", socket.id);
 
-  /* 1️⃣  el cliente indica a qué proyecto pertenece */
+  /* ---------- proyecto (sala) ---------- */
   socket.on("joinProject", ({ projectId }) => {
     if (!projectId) return;
     socket.join(projectId);
     console.log(`➕ ${socket.id} entró a sala ${projectId}`);
   });
 
-  /* 2️⃣  snapshot de una pestaña (contenido html / css) */
+  /* ---------- editor (html / css snapshot) ---------- */
   socket.on("editorUpdate", data => {
-    const { projectId } = data;
-    if (!projectId) return;
-    socket.join(projectId);                 // por si acaso
-    io.to(projectId).emit("editorUpdate", data);
-    console.log(`🔄 snapshot difundido en ${projectId}`);
+    if (!data.projectId) return;
+    io.to(data.projectId).emit("editorUpdate", data);
   });
 
+  /* ---------- pestañas: altas / renombres / lista ---------- */
   socket.on("tabsSnapshot", pkt => {
     if (!pkt.projectId) return;
-    socket.join(pkt.projectId);
     io.to(pkt.projectId).emit("tabsSnapshot", pkt);
   });
 
-  /* 3️⃣  alta / baja / rename de pestañas */
   socket.on("tabsUpdate", data => {
-    const { projectId } = data;
-    if (!projectId) return;
-    socket.join(projectId);
-    io.to(projectId).emit("tabsUpdate", data);
-    console.log(`📑 tabsUpdate difundido en ${projectId}`);
+    if (!data.projectId) return;
+    io.to(data.projectId).emit("tabsUpdate", data);
   });
 
+  /* ---------- CURSORES colaborativos ---------- */
+  socket.on("cursorMove", pkt => {
+    if (!pkt.projectId) return;
+    socket.to(pkt.projectId).emit("cursorMove", { ...pkt, socketId: socket.id });
+  });
+
+  socket.on("cursorLeave", ({ projectId, socketId }) => {
+    if (projectId) io.to(projectId).emit("cursorLeave", { socketId });
+  });
+
+  /* ---------- desconexión ---------- */
   socket.on("disconnect", () => {
     console.log("🔴 Desconectado:", socket.id);
+    // avisar a todas las rooms en las que estaba
+    socket.rooms.forEach(room => {
+      if (room !== socket.id) io.to(room).emit("cursorLeave", { socketId: socket.id });
+    });
   });
 });
 
@@ -58,8 +66,7 @@ server.listen(PORT, () =>
 );
 
 /* ---------- base de datos ---------- */
-sequelize
-  .authenticate()
+sequelize.authenticate()
   .then(() => {
     console.log("✅ DB conectada");
     return sequelize.sync({ alter: true });
