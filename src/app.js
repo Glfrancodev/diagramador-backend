@@ -8,6 +8,7 @@ const app = express();
 /* ---------- CORS ---------- */
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*', // ⚠️ Define esto en Railway
+  methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 }));
 
