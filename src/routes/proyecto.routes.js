@@ -11,7 +11,6 @@ router.get('/', verificarToken, proyectoController.listar);
 router.get('/permisos', verificarToken, proyectoController.listarPermitidos);
 router.get('/invitados', verificarToken, proyectoController.listarInvitados);
 router.post('/importar-boceto', upload.single('imagen'), proyectoController.importarBoceto);
-router.post('/crear-desde-imagen', verificarToken, proyectoController.crearDesdeImagen); // ✅ NUEVA RUTA
 router.get('/exportar/:id', verificarToken, proyectoController.exportar);
 
 // ⬇⬇ NUEVO: Ruta para exportar el CRUD simulado
