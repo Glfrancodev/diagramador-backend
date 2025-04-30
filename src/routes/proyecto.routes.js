@@ -10,10 +10,13 @@ router.get('/permisos', verificarToken, proyectoController.listarPermitidos);
 router.get('/invitados', verificarToken, proyectoController.listarInvitados);
 
 router.get('/exportar/:id', verificarToken, proyectoController.exportar);
+
+// ⬇⬇ NUEVO: Ruta para exportar el CRUD simulado
+router.post('/exportar-crud-simulado', verificarToken, proyectoController.exportarCrudSimulado);
+
 router.get('/mis-proyectos', verificarToken, proyectoController.listarPorUsuario);
 router.get('/:id', verificarToken, proyectoController.obtener);
 router.put('/:id', verificarToken, proyectoController.actualizar);
 router.delete('/:id', verificarToken, proyectoController.eliminar);
-
 
 module.exports = router;
