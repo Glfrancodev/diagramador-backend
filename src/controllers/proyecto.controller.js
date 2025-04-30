@@ -1,4 +1,7 @@
 const fs = require('fs').promises;
+const { OpenAI } = require('openai');
+const axios = require('axios');
+const fsSync = require('fs'); // <- nuevo alias para funciones síncronas como readFileSync
 const archiver = require('archiver');
 const path = require('path');
 const { createWriteStream, rmSync, unlinkSync } = require('fs');
@@ -15,6 +18,9 @@ class ProyectoController {
         relaciones: contenidoRecibido.relaciones || [],
         clavesPrimarias: contenidoRecibido.clavesPrimarias || {}
       };
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+      });
   
       const data = {
         ...req.body,
@@ -998,7 +1004,116 @@ export class AppModule { }`);
                   return res.status(500).json({ error: 'Error al exportar CRUD simulado' });
                 }
               }
-                          
+
+              async importarBoceto(req, res) {
+                try {
+                  if (!req.file) {
+                    return res.status(400).json({ error: 'No se recibió ninguna imagen.' });
+                  }
+              
+                  const rutaImagen = req.file.path;
+                  const extension = path.extname(req.file.originalname).toLowerCase();
+              
+                  if (!['.png', '.jpg', '.jpeg'].includes(extension)) {
+                    return res.status(400).json({ error: 'Formato no válido. Solo PNG o JPG.' });
+                  }
+              
+                  const imagenBuffer = fsSync.readFileSync(rutaImagen);
+                  const imagenBase64 = imagenBuffer.toString('base64');
+              
+                  const prompt = `
+              La siguiente imagen contiene un boceto de una interfaz de usuario. Analízala e identifica si representa un CRUD (crear, leer, actualizar, eliminar).
+              Si es así, devuélveme la estructura en este formato JSON sin explicaciones, directamente así:
+              
+              {
+                "clases": [
+                  {
+                    "nombre": "Usuario",
+                    "atributos": [
+                      { "nombre": "nombre" },
+                      { "nombre": "correo" },
+                      { "nombre": "fechaNacimiento" }
+                    ]
+                  }
+                ],
+                "llavesPrimarias": {
+                  "Usuario": "id"
+                },
+                "relaciones": []
+              }
+              `;
+              
+                  const openaiResponse = await axios.post(
+                    'https://api.openai.com/v1/chat/completions',
+                    {
+                      model: "gpt-4o",
+                      messages: [
+                        {
+                          role: 'user',
+                          content: [
+                            { type: 'text', text: prompt },
+                            {
+                              type: 'image_url',
+                              image_url: {
+                                url: `data:image/${extension.replace('.', '')};base64,${imagenBase64}`,
+                              },
+                            },
+                          ],
+                        },
+                      ],
+                      max_tokens: 1000,
+                    },
+                    {
+                      headers: {
+                        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                        'Content-Type': 'application/json',
+                      },
+                    }
+                  );
+              
+                  let textoRespuesta = openaiResponse.data.choices?.[0]?.message?.content;
+                  if (!textoRespuesta) {
+                    return res.status(500).json({ error: 'OpenAI no devolvió una respuesta válida.' });
+                  }
+              
+                  const match = textoRespuesta.match(/\{[\s\S]*\}/);
+                  if (!match) {
+                    return res.status(400).json({ error: 'No se encontró ningún JSON en la respuesta.', raw: textoRespuesta });
+                  }
+              
+                  let estructura;
+                  try {
+                    estructura = JSON.parse(match[0]);
+                  } catch (err) {
+                    console.error('❌ Error al parsear JSON de OpenAI:', match[0]);
+                    return res.status(400).json({ error: 'La respuesta de OpenAI contiene JSON inválido.', raw: match[0] });
+                  }
+              
+                  // ✅ Añadir clave primaria como atributo si no está
+                  estructura.clases = estructura.clases.map(clase => {
+                    const atributosNombres = clase.atributos.map(attr => attr.nombre);
+                    const pk = estructura.llavesPrimarias?.[clase.nombre];
+              
+                    if (pk && !atributosNombres.includes(pk)) {
+                      return {
+                        ...clase,
+                        atributos: [{ nombre: pk }, ...clase.atributos],
+                      };
+                    }
+              
+                    return clase;
+                  });
+              
+                  res.status(200).json({
+                    mensaje: '✅ Imagen analizada correctamente',
+                    estructura
+                  });
+              
+                } catch (error) {
+                  console.error('[importarBoceto] Error:', error?.response?.data || error.message);
+                  res.status(500).json({ error: 'Error interno al analizar el boceto.' });
+                }
+              }
       
       }
       
