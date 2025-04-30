@@ -6,11 +6,17 @@ require('dotenv').config(); // Asegúrate que esté antes de usar process.env
 const app = express();
 
 /* ---------- CORS ---------- */
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*', // ⚠️ Define esto en Railway
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN || '*', // Defínelo en Railway
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
-}));
+};
+
+// Aplica CORS globalmente
+app.use(cors(corsOptions));
+
+// Responde correctamente a las solicitudes OPTIONS (preflight requests)
+app.options('*', cors(corsOptions)); 
 
 /* ---------- Seguridad y logs (opcional) ---------- */
 const helmet = require('helmet');
